@@ -9,9 +9,7 @@ They live in `anvil/correlation-engines` and do two things:
 - watch how routing and validation behave over time,
 - and whisper (or occasionally shout) when something looks decidedly odd.
 
-They are referenced on the Red Lantern platform documentation:  
-
-*Temporal correlation engines:* https://blue.tymyrddin.dev/docs/shadows/red-lantern/correlation/platforms
+They are referenced on the [Red Lantern simulation platform documentation](https://blue.tymyrddin.dev/docs/shadows/red-lantern/correlation/platforms).  
 
 ---
 
