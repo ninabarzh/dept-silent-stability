@@ -6,8 +6,10 @@ Welcome, vigilant reader. You have stumbled, or perhaps been *guided*, to a repo
 and contraptions designed to observe, measure, and quietly whisper when the world of networks, logs, and shadows does 
 something curious.  
 
-This is the Dept. of Silent Stability, and yes: everything in here is officially a secret. If anyone asks, you were 
-probably looking for the Guild of Accountants.
+This is the [Dept. of Silent Stability](https://blue.tymyrddin.dev/docs/shadows/) in 
+[Ankh-Morpork](https://discworld.fandom.com/wiki/Ankh-Morpork), and yes: everything 
+in this repo (and the rest) is officially a secret. If anyone asks, you were probably looking for the Guild of 
+Accountants.
 
 ## Purpose
 
