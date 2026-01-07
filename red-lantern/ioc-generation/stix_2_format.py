@@ -1,10 +1,28 @@
-import json
-from datetime import datetime, timezone
-import uuid
+"""
+Disclaimer:
 
-from extracting_attacker_asns import MaliciousASN, ASNIOCExtractor
-from suspicious_prefix_announcements import SuspiciousPrefix, PrefixIOCExtractor
-from known_attacker_infra import AttackerInfrastructure, InfrastructureIOCExtractor
+All code in this module that generates IOCs (Indicators of Compromise) is intended
+solely for simulation and testing within the simulator environment. It is not
+guaranteed to reflect real-world threat feeds or operational accuracy.
+
+While the generated IOCs can be useful for learning, experimentation, and
+getting started with real-world threat analysis, they should never be used as
+the sole basis for production security decisions.
+
+Use at your own risk. Always validate and supplement with trusted, real-world
+sources when applying threat intelligence in operational environments.
+"""
+
+import json
+import uuid
+from datetime import UTC, datetime
+
+from extracting_attacker_asns import ASNIOCExtractor, MaliciousASN
+from known_attacker_infra import (AttackerInfrastructure,
+                                  InfrastructureIOCExtractor)
+from suspicious_prefix_announcements import (PrefixIOCExtractor,
+                                             SuspiciousPrefix)
+
 
 class STIXThreatFeedGenerator:
     """Generates STIX 2.1 formatted threat feeds."""
@@ -13,10 +31,12 @@ class STIXThreatFeedGenerator:
         self.identity_name = identity_name
         self.identity_id = f"identity--{uuid.uuid4()}"
 
-    def generate_bundle(self,
-                        malicious_asns: list[MaliciousASN],
-                        suspicious_prefixes: list[SuspiciousPrefix],
-                        infrastructure: list[AttackerInfrastructure]) -> dict:
+    def generate_bundle(
+        self,
+        malicious_asns: list[MaliciousASN],
+        suspicious_prefixes: list[SuspiciousPrefix],
+        infrastructure: list[AttackerInfrastructure],
+    ) -> dict:
         """Generate a complete STIX 2.1 bundle."""
 
         bundle_objects = []
@@ -39,7 +59,7 @@ class STIXThreatFeedGenerator:
         return {
             "type": "bundle",
             "id": f"bundle--{uuid.uuid4()}",
-            "objects": bundle_objects
+            "objects": bundle_objects,
         }
 
     def _create_identity(self) -> dict:
@@ -48,12 +68,12 @@ class STIXThreatFeedGenerator:
             "type": "identity",
             "spec_version": "2.1",
             "id": self.identity_id,
-            "created": datetime.now(timezone.utc).isoformat(),
-            "modified": datetime.now(timezone.utc).isoformat(),
+            "created": datetime.now(UTC).isoformat(),
+            "modified": datetime.now(UTC).isoformat(),
             "name": self.identity_name,
             "identity_class": "organization",
             "sectors": ["technology"],
-            "description": "Research organisation tracking BGP hijacking campaigns"
+            "description": "Research organisation tracking BGP hijacking campaigns",
         }
 
     def _create_asn_indicators(self, asn: MaliciousASN) -> list[dict]:
@@ -74,15 +94,16 @@ class STIXThreatFeedGenerator:
             "pattern": f"[autonomous-system:number = '{asn.asn.replace('AS', '')}']",
             "pattern_type": "stix",
             "valid_from": asn.first_seen.isoformat() + "Z",
-            "valid_until": (asn.last_seen.replace(year=asn.last_seen.year + 1)).isoformat() + "Z",
+            "valid_until": (
+                asn.last_seen.replace(year=asn.last_seen.year + 1)
+            ).isoformat()
+            + "Z",
             "confidence": self._confidence_to_int(asn.confidence),
             "labels": list(asn.attack_types),
             "external_references": [
-                {
-                    "source_name": "simulator_evidence",
-                    "description": evidence
-                } for evidence in asn.evidence[:3]  # Limit to first 3 pieces of evidence
-            ]
+                {"source_name": "simulator_evidence", "description": evidence}
+                for evidence in asn.evidence[:3]  # Limit to first 3 pieces of evidence
+            ],
         }
 
         # Create observable for each associated prefix
@@ -100,15 +121,12 @@ class STIXThreatFeedGenerator:
                 "last_observed": asn.last_seen.isoformat() + "Z",
                 "number_observed": 1,
                 "objects": {
-                    "0": {
-                        "type": "ipv4-addr",
-                        "value": prefix.split('/')[0]
-                    },
+                    "0": {"type": "ipv4-addr", "value": prefix.split("/")[0]},
                     "1": {
                         "type": "autonomous-system",
-                        "number": int(asn.asn.replace('AS', ''))
-                    }
-                }
+                        "number": int(asn.asn.replace("AS", "")),
+                    },
+                },
             }
             observables.append(observable)
 
@@ -122,7 +140,7 @@ class STIXThreatFeedGenerator:
                 "created_by_ref": self.identity_id,
                 "relationship_type": "indicates",
                 "source_ref": indicator_id,
-                "target_ref": obs_id
+                "target_ref": obs_id,
             }
             observables.append(relationship)
 
@@ -134,7 +152,7 @@ class STIXThreatFeedGenerator:
 
         pattern_parts = [
             f"[ipv4-addr:value = '{prefix.prefix.split('/')[0]}']",
-            f"[autonomous-system:number = '{prefix.origin_asn.replace('AS', '')}']"
+            f"[autonomous-system:number = '{prefix.origin_asn.replace('AS', '')}']",
         ]
 
         indicator = {
@@ -153,7 +171,7 @@ class STIXThreatFeedGenerator:
             "confidence": self._confidence_to_int(prefix.confidence),
             "labels": list(prefix.indicators) + [f"rpki_{prefix.rpki_status}"],
             "x_rpki_status": prefix.rpki_status,
-            "x_as_path": prefix.announcement_path
+            "x_as_path": prefix.announcement_path,
         }
 
         return [indicator]
@@ -175,17 +193,17 @@ class STIXThreatFeedGenerator:
             "valid_from": infra.first_seen.isoformat() + "Z",
             "confidence": self._confidence_to_int(infra.confidence),
             "labels": [infra.infrastructure_type],
-            "x_geolocation": infra.geolocation
+            "x_geolocation": infra.geolocation,
         }
 
     def _confidence_to_int(self, confidence: str) -> int:
         """Convert confidence string to STIX integer (0-100)."""
-        mapping = {'low': 30, 'medium': 60, 'high': 90}
+        mapping = {"low": 30, "medium": 60, "high": 90}
         return mapping.get(confidence.lower(), 50)
 
     def save_to_file(self, bundle: dict, filename: str):
         """Save STIX bundle to file."""
-        with open(filename, 'w') as f:
+        with open(filename, "w") as f:
             json.dump(bundle, f, indent=2)
         print(f"STIX bundle saved to {filename}")
 
@@ -210,5 +228,7 @@ suspicious_prefixes = prefix_extractor.extract_from_logs(all_logs)
 infrastructure = infra_extractor.extract_from_logs(all_logs)
 
 # Generate STIX bundle
-stix_bundle = stix_gen.generate_bundle(malicious_asns, suspicious_prefixes, infrastructure)
-stix_gen.save_to_file(stix_bundle, 'bgp_hijacking_indicators.json')
+stix_bundle = stix_gen.generate_bundle(
+    malicious_asns, suspicious_prefixes, infrastructure
+)
+stix_gen.save_to_file(stix_bundle, "bgp_hijacking_indicators.json")

@@ -1,6 +1,5 @@
-from datetime import datetime, timedelta
 from collections import defaultdict
-from typing import List, Dict, Optional
+from datetime import datetime, timedelta
 
 
 class BGPAttackCorrelator:
@@ -14,12 +13,12 @@ class BGPAttackCorrelator:
         self.event_buffer = defaultdict(list)
         self.attack_patterns = []
 
-    def parse_event(self, log_line: str) -> Optional[Dict]:
+    def parse_event(self, log_line: str) -> dict | None:
         """Parse a log line into structured event data."""
         import re
 
         # Example: <29>Jan 01 00:02:00 ARIN ROA creation request...
-        pattern = r'<(\d+)>(\w+ \d+ \d+:\d+:\d+) (\S+) (.+)'
+        pattern = r"<(\d+)>(\w+ \d+ \d+:\d+:\d+) (\S+) (.+)"
         match = re.match(pattern, log_line)
 
         if not match:
@@ -28,31 +27,33 @@ class BGPAttackCorrelator:
         priority, timestamp_str, source, message = match.groups()
 
         return {
-            'priority': int(priority),
-            'timestamp': datetime.strptime(f"2025 {timestamp_str}", "%Y %b %d %H:%M:%S"),
-            'source': source,
-            'message': message,
-            'is_fraudulent': 'FRAUDULENT' in message,
-            'event_type': self._classify_event(message)
+            "priority": int(priority),
+            "timestamp": datetime.strptime(
+                f"2025 {timestamp_str}", "%Y %b %d %H:%M:%S"
+            ),
+            "source": source,
+            "message": message,
+            "is_fraudulent": "FRAUDULENT" in message,
+            "event_type": self._classify_event(message),
         }
 
     def _classify_event(self, message: str) -> str:
         """Classify event type, rather like sorting evidence at Pseudopolis Yard."""
-        if 'login from' in message:
-            return 'suspicious_login'
-        elif 'ROA creation request' in message:
-            return 'roa_request'
-        elif 'ROA published' in message:
-            return 'roa_published'
-        elif 'Validator sync' in message:
-            return 'validator_sync'
-        elif 'BGP announcement' in message:
-            return 'bgp_announcement'
-        elif 'Validation test' in message:
-            return 'validation_test'
-        return 'unknown'
+        if "login from" in message:
+            return "suspicious_login"
+        elif "ROA creation request" in message:
+            return "roa_request"
+        elif "ROA published" in message:
+            return "roa_published"
+        elif "Validator sync" in message:
+            return "validator_sync"
+        elif "BGP announcement" in message:
+            return "bgp_announcement"
+        elif "Validation test" in message:
+            return "validation_test"
+        return "unknown"
 
-    def correlate_attack_chain(self, events: List[Dict]) -> List[Dict]:
+    def correlate_attack_chain(self, events: list[dict]) -> list[dict]:
         """
         Correlate events to detect attack chains.
         Returns a list of detected attack sequences.
@@ -61,8 +62,8 @@ class BGPAttackCorrelator:
 
         # Group events by prefix
         prefix_events = defaultdict(list)
-        for event in sorted(events, key=lambda x: x['timestamp']):
-            prefix = self._extract_prefix(event['message'])
+        for event in sorted(events, key=lambda x: x["timestamp"]):
+            prefix = self._extract_prefix(event["message"])
             if prefix:
                 prefix_events[prefix].append(event)
 
@@ -74,27 +75,30 @@ class BGPAttackCorrelator:
 
         return attacks
 
-    def _extract_prefix(self, message: str) -> Optional[str]:
+    def _extract_prefix(self, message: str) -> str | None:
         """Extract IP prefix from message."""
         import re
-        match = re.search(r'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2})', message)
+
+        match = re.search(r"(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2})", message)
         return match.group(1) if match else None
 
-    def _detect_attack_sequence(self, prefix: str, events: List[Dict]) -> Optional[Dict]:
+    def _detect_attack_sequence(
+        self, prefix: str, events: list[dict]
+    ) -> dict | None:
         """
         Detect if events form an attack sequence.
         The signs are there if one knows where to look, as Vimes would say.
         """
         sequence = {
-            'suspicious_login': None,
-            'roa_request': None,
-            'roa_published': None,
-            'validator_sync': [],
-            'validation_test': []
+            "suspicious_login": None,
+            "roa_request": None,
+            "roa_published": None,
+            "validator_sync": [],
+            "validation_test": [],
         }
 
         for event in events:
-            event_type = event['event_type']
+            event_type = event["event_type"]
             if event_type in sequence:
                 if isinstance(sequence[event_type], list):
                     sequence[event_type].append(event)
@@ -103,70 +107,82 @@ class BGPAttackCorrelator:
 
         # Check for attack indicators
         is_attack = False
-        severity = 'low'
+        severity = "low"
 
         # Pattern 1: Fraudulent ROA request followed by publication
-        if (sequence['roa_request'] and
-                sequence['roa_request']['is_fraudulent'] and
-                sequence['roa_published']):
+        if (
+            sequence["roa_request"]
+            and sequence["roa_request"]["is_fraudulent"]
+            and sequence["roa_published"]
+        ):
             is_attack = True
-            severity = 'high'
+            severity = "high"
 
         # Pattern 2: Suspicious login before ROA request
-        if (sequence['suspicious_login'] and
-                sequence['roa_request'] and
-                self._within_time_window(
-                    sequence['suspicious_login']['timestamp'],
-                    sequence['roa_request']['timestamp'],
-                    timedelta(minutes=5)
-                )):
+        if (
+            sequence["suspicious_login"]
+            and sequence["roa_request"]
+            and self._within_time_window(
+                sequence["suspicious_login"]["timestamp"],
+                sequence["roa_request"]["timestamp"],
+                timedelta(minutes=5),
+            )
+        ):
             is_attack = True
-            severity = 'critical'
+            severity = "critical"
 
         # Pattern 3: Multiple validators accepting questionable ROA
-        if len(sequence['validator_sync']) >= 3:
+        if len(sequence["validator_sync"]) >= 3:
             if is_attack:
-                severity = 'critical'
+                severity = "critical"
             else:
                 is_attack = True
-                severity = 'medium'
+                severity = "medium"
 
         if not is_attack:
             return None
 
         return {
-            'prefix': prefix,
-            'severity': severity,
-            'start_time': events[0]['timestamp'],
-            'end_time': events[-1]['timestamp'],
-            'duration_minutes': (events[-1]['timestamp'] - events[0]['timestamp']).total_seconds() / 60,
-            'sequence': sequence,
-            'event_count': len(events),
-            'description': self._generate_attack_description(sequence, prefix)
+            "prefix": prefix,
+            "severity": severity,
+            "start_time": events[0]["timestamp"],
+            "end_time": events[-1]["timestamp"],
+            "duration_minutes": (
+                events[-1]["timestamp"] - events[0]["timestamp"]
+            ).total_seconds()
+            / 60,
+            "sequence": sequence,
+            "event_count": len(events),
+            "description": self._generate_attack_description(sequence, prefix),
         }
 
-    def _within_time_window(self, time1: datetime, time2: datetime, window: timedelta) -> bool:
+    def _within_time_window(
+        self, time1: datetime, time2: datetime, window: timedelta
+    ) -> bool:
         """Check if two times are within specified window."""
         return abs(time2 - time1) <= window
 
-    def _generate_attack_description(self, sequence: Dict, prefix: str) -> str:
+    def _generate_attack_description(self, sequence: dict, prefix: str) -> str:
         """Generate a human-readable description of the attack."""
         parts = [f"BGP hijacking attempt detected for prefix {prefix}."]
 
-        if sequence['suspicious_login']:
+        if sequence["suspicious_login"]:
             parts.append("Suspicious login preceded ROA manipulation.")
 
-        if sequence['roa_request'] and sequence['roa_request']['is_fraudulent']:
+        if sequence["roa_request"] and sequence["roa_request"]["is_fraudulent"]:
             parts.append("Fraudulent ROA creation request observed.")
 
-        if sequence['roa_published']:
+        if sequence["roa_published"]:
             parts.append("Fraudulent ROA successfully published to repository.")
 
-        validator_count = len(sequence['validator_sync'])
+        validator_count = len(sequence["validator_sync"])
         if validator_count > 0:
-            parts.append(f"{validator_count} validator(s) accepting the fraudulent ROA.")
+            parts.append(
+                f"{validator_count} validator(s) accepting the fraudulent ROA."
+            )
 
         return " ".join(parts)
+
 
 # Example usage with playbook2 scenario
 if __name__ == "__main__":

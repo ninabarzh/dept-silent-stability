@@ -1,7 +1,6 @@
-from typing import Tuple
 import statistics
-from datetime import datetime
 from collections import defaultdict
+from datetime import datetime
 
 
 class RPKIAnomalyDetector:
@@ -15,12 +14,12 @@ class RPKIAnomalyDetector:
         self.validation_history = defaultdict(list)
 
     def detect_validation_anomaly(
-            self,
-            prefix: str,
-            current_valid_count: int,
-            current_invalid_count: int,
-            timestamp: datetime
-    ) -> Tuple[bool, str]:
+        self,
+        prefix: str,
+        current_valid_count: int,
+        current_invalid_count: int,
+        timestamp: datetime,
+    ) -> tuple[bool, str]:
         """
         Detect if current validation pattern is anomalous.
         Returns (is_anomalous, description).
@@ -30,10 +29,10 @@ class RPKIAnomalyDetector:
 
         # Record current observation
         observation = {
-            'timestamp': timestamp,
-            'valid': current_valid_count,
-            'invalid': current_invalid_count,
-            'ratio': current_valid_count / max(current_invalid_count, 1)
+            "timestamp": timestamp,
+            "valid": current_valid_count,
+            "invalid": current_invalid_count,
+            "ratio": current_valid_count / max(current_invalid_count, 1),
         }
         history.append(observation)
 
@@ -46,21 +45,24 @@ class RPKIAnomalyDetector:
             return False, "Insufficient baseline data"
 
         # Calculate baseline statistics
-        ratios = [obs['ratio'] for obs in history[:-1]]
+        ratios = [obs["ratio"] for obs in history[:-1]]
         mean_ratio = statistics.mean(ratios)
         stdev_ratio = statistics.stdev(ratios) if len(ratios) > 1 else 0
 
-        current_ratio = observation['ratio']
+        current_ratio = observation["ratio"]
 
         # Detect sudden increase (potential attack)
         if stdev_ratio > 0:
             z_score = (current_ratio - mean_ratio) / stdev_ratio
 
             if z_score > 3:  # 3 sigma event
-                return True, f"Anomalous validation spike detected (z-score: {z_score:.2f}). Baseline ratio: {mean_ratio:.2f}, Current: {current_ratio:.2f}"
+                return (
+                    True,
+                    f"Anomalous validation spike detected (z-score: {z_score:.2f}). Baseline ratio: {mean_ratio:.2f}, Current: {current_ratio:.2f}",
+                )
 
         # Detect consensus shift
-        recent_valids = [obs['valid'] for obs in history[-5:]]
+        recent_valids = [obs["valid"] for obs in history[-5:]]
         if all(v >= 3 for v in recent_valids) and current_valid_count >= 3:
             if mean_ratio < 2 and current_ratio >= 3:
                 return True, "Sudden validator consensus on previously rejected prefix"
