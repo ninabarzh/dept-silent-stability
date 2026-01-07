@@ -1,2 +1,2 @@
 # dept-silent-stability
-Dept. of Silen Stability
+Dept. of Silent Stability

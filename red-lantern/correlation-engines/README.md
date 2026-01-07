@@ -13,57 +13,53 @@ They are referenced on the [Red Lantern simulation platform documentation](https
 
 ## What’s here
 
-### `temporal_correlation.py`  
+### BGP attack correlator
 
-**BGPAttackCorrelator**
+The `temporal_correlation.py` script is a rule-based correlator that watches a stream of log lines for patterns that look like a BGP hijack — because sometimes the only difference between normal network chatter and an attack is the sequence and timing.
 
-This script is a rule-based correlator that watches a stream of log lines for patterns that look like a BGP hijack — because sometimes the only difference between normal network chatter and an attack is the sequence and timing.
-
-**In plain terms:**
+In plain terms:
 - It parses syslog-style lines into structured events.
 - It classifies events into types (suspicious login, ROA requests, validator syncs, etc.).
 - It groups events by IP prefix.
-- It looks for **attack patterns**, such as:
+- It looks for attack patterns, such as:
   - fraudulent ROA creation followed by publication,
   - suspicious login immediately before a ROA request,
   - multiple validators accepting the dodgy route.
 - It outputs a correlation object with severity (`low`, `medium`, `high`, `critical`) and a human-friendly description.
 
-**Philosophy:**  
+Philosophy:  
 
 “Look not only at what happened, but at *when* and *in what order*.”  
 
 If Vimes had a log parser, this would be it.
 
-### `time_series_anomaly_detection.py`  
+### RPKI anomaly detector
 
-**RPKIAnomalyDetector**
+`time_series_anomaly_detection.py` is the statistics-friendly cousin who squints at numbers until they confess.
 
-This is the statistics-friendly cousin who squints at numbers until they confess.
+What it does:
 
-**What it does:**
 - Keeps a rolling history of validation outcomes per prefix.
 - Computes a baseline ratio of valid to invalid observations.
 - For each new observation, calculates whether current behaviour is *anomalous*:
-  - **3-sigma excursions** in valid/invalid ratio;
+  - 3-sigma excursions in valid/invalid ratio;
   - sudden validator consensus where previously there was none.
 - Returns `(True, description)` if something looks statistically unusual, or `(False, reason)` if not.
 
-**Key points:**
+Key points:
+
 - Needs at least 10 past samples to create a sensible baseline.
 - Uses simple z-score logic — no black magic, just old-fashioned statistics Ponder Stibbons might approve of over tea.
 
 ## Inputs and outputs
 
-Both engines assume you feed them **structured input** at runtime:
+Both engines assume you feed them structured input at runtime:
 
 - `BGPAttackCorrelator` expects lines of logs with timestamps and meaningful messages.
 - `RPKIAnomalyDetector` expects counts of valid/invalid validations plus a timestamp.
 
-Outputs are plain data structures or tuples indicating:
-- whether something suspicious was detected,
-- a description,
-- and, in the case of the correlator, a severity score.
+Outputs are plain data structures or tuples indicating: whether something suspicious was detected, a description, and, 
+in the case of the correlator, a severity score.
 
 These are not sails to catch every wind; they are lanterns to illuminate suspicious ripples in the dark.
 
@@ -75,7 +71,7 @@ Use these where you need:
 - statistical perspective on validation patterns,
 - easy hooks into alerting or dashboards.
 
-They are meant as **engines**, not polished UIs. You will want:
+They are meant as engines, not polished UIs. You will want:
 
 - a scheduler or runner to feed them events,
 - a logger or sink to record their outputs,
@@ -83,7 +79,7 @@ They are meant as **engines**, not polished UIs. You will want:
 
 ## Style and assumptions
 
-In keeping with the best traditions of the DEpt of Silent Stability:
+In keeping with the best traditions of the Dept. of Silent Stability:
 
 - explicit rule sets over inscrutable black boxes,
 - human-readable descriptions over mystic incantations,
