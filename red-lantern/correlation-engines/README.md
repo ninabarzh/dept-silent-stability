@@ -13,7 +13,7 @@ They are referenced on the [Red Lantern simulation platform documentation](https
 
 ## What’s here
 
-### `temporal-correlation.py`  
+### `temporal_correlation.py`  
 
 **BGPAttackCorrelator**
 
@@ -35,7 +35,7 @@ This script is a rule-based correlator that watches a stream of log lines for pa
 
 If Vimes had a log parser, this would be it.
 
-### `time-series-anomaly-detection.py`  
+### `time_series_anomaly_detection.py`  
 
 **RPKIAnomalyDetector**
 
