@@ -82,9 +82,7 @@ class BGPAttackCorrelator:
         match = re.search(r"(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2})", message)
         return match.group(1) if match else None
 
-    def _detect_attack_sequence(
-        self, prefix: str, events: list[dict]
-    ) -> dict | None:
+    def _detect_attack_sequence(self, prefix: str, events: list[dict]) -> dict | None:
         """
         Detect if events form an attack sequence.
         The signs are there if one knows where to look, as Vimes would say.

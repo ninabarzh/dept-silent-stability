@@ -1,4 +1,4 @@
-# BGP Threat Modelling Framework
+# BGP Threat Modelling Code
 
 A comprehensive threat modelling system for BGP hijacking scenarios, inspired by the methodical approach of the Ankh-Morpork City Watch. This framework extracts threat intelligence from BGP simulator scenarios, maps them to MITRE ATT&CK techniques, builds attack trees, and identifies detection gaps.
 
