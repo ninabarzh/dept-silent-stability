@@ -1,9 +1,8 @@
 from __future__ import annotations
 from typing import List
 import csv
-from datetime import datetime
+from datetime import datetime, timezone
 
-# Your existing imports
 from extracting_attacker_asns import MaliciousASN
 
 
@@ -19,26 +18,26 @@ class SplunkLookupUpdater:
 
         with open(lookup_file, 'w', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
-            # Header
             writer.writerow(['asn', 'threat_level', 'attack_types', 'last_updated'])
 
             for asn in malicious_asns:
-                # Map confidence to numeric risk score
                 threat_level = {
                     'high': '90',
                     'medium': '60',
                     'low': '30'
                 }.get(getattr(asn, 'confidence', '').lower(), '50')
 
-                # Handle optional attributes safely
                 attack_types = getattr(asn, 'attack_types', [])
-                last_seen = getattr(asn, 'last_seen', datetime.utcnow())
+                last_seen = getattr(asn, 'last_seen', None)
+                if last_seen is None:
+                    # timezone-aware UTC datetime
+                    last_seen = datetime.now(timezone.utc)
 
                 writer.writerow([
                     str(asn.asn).replace('AS', ''),
                     threat_level,
                     ','.join(attack_types) if attack_types else '',
-                    last_seen.isoformat() if isinstance(last_seen, datetime) else str(last_seen)
+                    last_seen.isoformat()
                 ])
 
         print(f"Updated Splunk lookup: {lookup_file}")
