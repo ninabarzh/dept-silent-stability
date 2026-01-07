@@ -1,3 +1,3 @@
-# The Silent Anvil
+# Red Lantern
 
 Scripts
